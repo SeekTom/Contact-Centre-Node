@@ -7,7 +7,6 @@ Languages: Node js
 This implements:
 
 - Single channel (Voice)
--  4 departments
 -  Agent UI based on TaskRouter SDK for low latency
 -  Twilio Client WebRTC agent dashboard
 - Conference instruction
