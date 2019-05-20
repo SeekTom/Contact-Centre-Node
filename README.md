@@ -14,6 +14,7 @@ This implements:
 - Conference recording
 - Call holding
 - Call transfers
+- Outbound calling
 - Optional assignment_callback url implementation
 
 It will need a public url, there are two ngrok_url parameters in the following files that you will need to enter your public root domain:
