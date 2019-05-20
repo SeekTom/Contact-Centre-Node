@@ -16,3 +16,7 @@ This implements:
 - Call transfers
 - Optional assignment_callback url implementation
 
+It will need a public url, there are two ngrok_url parameters in the following files that you will need to enter your public root domain:
+
+server.js line 31
+agent_desktop: line 52
