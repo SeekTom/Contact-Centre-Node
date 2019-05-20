@@ -49,7 +49,7 @@
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
         let caller_id = "{{ caller_id }}";
-        let ngrok_url = "";
+        let ngrok_url = "https://7832da68.ngrok.io";
         var device;
         //  $(function () {
 
@@ -103,6 +103,10 @@
                         });
 
                         worker.on('reservation.created', function (reservation) {
+                            ReservationObject = reservation;  // set global ReservationObject
+                           
+                            console.log(reservation);
+                            if (!reservation.task.attributes.x   ==="outgoing"){
                             logger("-----");
                             logger("You have been reserved to handle a call!");
                             logger("Call from: " + reservation.task.attributes.from);
@@ -110,8 +114,14 @@
                             logger("Customer request: " + reservation.task.attributes.selected_product);
                             logger("-----");
                             logger(reservation.sid);
-                            refreshWorkerUI(worker, "Incoming Reservation")
-                            ReservationObject = reservation;  // set global ReservationObject
+                            refreshWorkerUI(worker, "Incoming Reservation")}
+                            else{
+                                
+                                acceptReservation();
+                                refreshWorkerUI(worker, "In a Call");
+                            }
+
+                                
                         });
 
                         worker.on('reservation.accepted', function (reservation) {
@@ -495,7 +505,7 @@
         </section>
        
         <input type="text" id="number" class="n" name="number"
-        placeholder="Enter a phone number or client to call"/>
+        placeholder="Enter a phone number to call"/>
     
         <div class="dialpad">
         <div class="keys">
@@ -539,9 +549,10 @@
               <button class="btn btn-circle btn-default" onclick="sendDigit('+');">+</button>
    
          </div>
-         <button id="btn_outbound" class="btn" onclick="createOutboundCall()">Create outboundCall</button>
            
         </div>
+        <button id="btn_outbound" class="btn" onclick="createOutboundCall()">Create outboundCall</button>
+       
         <div style="padding-top:0.5em">
             <a href="/agent_list">Back to Agent List</a>
         </div>

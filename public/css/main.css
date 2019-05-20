@@ -5,11 +5,15 @@ body {
 
   .dialpad {
    
-    margin-top:5px;
+    margin-top:10px;
+    margin-bottom:10px;
   }
 
  #number{
+   margin:10px;
    width:300px;
+   text-align: center;
+   font-size:18px;
  } 
   phone {  
     background-size: contain;

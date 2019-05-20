@@ -27,7 +27,7 @@ const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone num
 const wrap_up = process.env.TWILIO_ACME_WRAP_UP_ACTIVTY; //add your wrap up activity sid here
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
-const ngrok_url = ""; //add your ngrok url
+const ngrok_url = "https://7832da68.ngrok.io"; //add your ngrok url
 const url = require("url");
  
 const TASKROUTER_BASE_URL = "https://taskrouter.twilio.com";
