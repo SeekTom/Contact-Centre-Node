@@ -1,0 +1,64 @@
+body {
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+  }
+
+  .dialpad {
+   
+    margin-top:5px;
+  }
+
+ #number{
+   width:300px;
+ } 
+  phone {  
+    background-size: contain;
+    height:655px;
+  }
+  #wrapper {
+    width:500px;
+    height:410px;
+    margin:0 auto 0 auto;
+    position:relative;
+    padding:24px 0 0 0;
+    background:#fff;
+  }
+  #key {
+    border-radius: 50px 50px 50px 50px;
+    color:#444;
+    width:70px;
+    height:70px;
+    text-align:center;
+    font-size:15px;
+    float:left;
+    box-sizing:border-box;
+    padding:5px 0 0 0;
+    margin:0 7px 10px 7px;
+    border:1px solid #444;
+    cursor:pointer;
+  }
+  .keys span {
+    display:block;
+    color:#444;
+    text-align:center;
+    font-size:10px;
+    text-transform:uppercase;
+  }
+  #key.special {
+    line-height:60px;
+  }
+  #key.nb {
+    border:none;
+  }
+  #key.phone {
+    background:#5CDB74;
+    border:none;
+    color:#FFF;
+    line-height:60px;
+    font-size:15px;
+  }
+
+
+  .clear {
+    clear:both;
+  }

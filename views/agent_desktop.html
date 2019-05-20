@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>OwlCorp - Chat Agent Screen</title>
+    <title>OwlCorp - TaskRouter POC Agent Desktop</title>
 
     <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.6/twilio.min.js"></script>
     <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.20/taskrouter.min.js"></script>
@@ -10,6 +10,7 @@
 
     <link type="text/css" rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css" />
     <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="css/main.css" rel="stylesheet" type="text/css">
 
     <style>
         .btn {
@@ -48,156 +49,163 @@
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
         let caller_id = "{{ caller_id }}";
-        let ngrok_url = "http://bca900be.ngrok.io";
-
+        let ngrok_url = "";
         var device;
-       //  $(function () {
+        //  $(function () {
 
-            function getParameterByName(name, url) {
-                if (!url) url = window.location.href;
-                name = name.replace(/[\[\]]/g, "\\$&");
-                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-                    results = regex.exec(url);
-                if (!results) return null;
-                if (!results[2]) return '';
-                return decodeURIComponent(results[2].replace(/\+/g, " "));
-            }
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
 
-            let Worker_sid = getParameterByName('WorkerSid');
+        let Worker_sid = getParameterByName('WorkerSid');
 
-            $.post("/client_token", { WorkerSid: Worker_sid })
-                .then(function (data) {
+        $.post("/client_token", { WorkerSid: Worker_sid })
+            .then(function (data) {
 
-                    device = new Twilio.Device(data);
-                    console.log(device);
-                    //  Twilio.Device.setup(data, { debug: true });
+                device = new Twilio.Device(data);
+                console.log(device);
+                //  Twilio.Device.setup(data, { debug: true });
 
-                    let Worker_sid = getParameterByName('WorkerSid');
-                    console.log(Worker_sid);
+                let Worker_sid = getParameterByName('WorkerSid');
+                console.log(Worker_sid);
 
-                    $.post("/worker_token", { WorkerSid: getParameterByName('WorkerSid') })
-                        .then(function (data) {
+                $.post("/worker_token", { WorkerSid: getParameterByName('WorkerSid') })
+                    .then(function (data) {
 
-                            console.log(data);
-                            worker = new Twilio.TaskRouter.Worker(data);
+                        console.log(data);
+                        worker = new Twilio.TaskRouter.Worker(data);
 
-                            worker.on('ready', function (worker) {
-                                logger("Successfully registered as: " + worker.friendlyName);
-                                if (worker.attributes.skills && worker.attributes.skills.includes('manager')) {
-                                    document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
-                                    isManager = true;
-                                } else {
-                                    document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
-                                }
-                                if (worker.attributes.skills) {
-                                    logger("Skills: " + worker.attributes.skills);
-                                }
-                                logger("Current activity is: " + worker.activityName);
-                                refreshWorkerUI(worker);
-                            });
+                        worker.on('ready', function (worker) {
+                            logger("Successfully registered as: " + worker.friendlyName);
+                            if (worker.attributes.skills && worker.attributes.skills.includes('manager')) {
+                                document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
+                                isManager = true;
+                            } else {
+                                document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
+                            }
+                            if (worker.attributes.skills) {
+                                logger("Skills: " + worker.attributes.skills);
+                            }
+                            logger("Current activity is: " + worker.activityName);
+                            refreshWorkerUI(worker);
+                        });
 
-                            worker.on('activity.update', function (worker) {
-                                let activityName = worker.activityName;
-                                logger("Worker activity changed to: " + activityName);
-                                refreshWorkerUI(worker)
-                            });
+                        worker.on('activity.update', function (worker) {
+                            let activityName = worker.activityName;
+                            logger("Worker activity changed to: " + activityName);
+                            refreshWorkerUI(worker)
+                        });
 
-                            worker.on('reservation.created', function (reservation) {
-                                logger("-----");
-                                logger("You have been reserved to handle a call!");
-                                logger("Call from: " + reservation.task.attributes.from);
-                                logger("Selected language: " + reservation.task.attributes.selected_language);
-                                logger("Customer request: " + reservation.task.attributes.selected_product);
-                                logger("-----");
-                                logger(reservation.sid);
-                                refreshWorkerUI(worker, "Incoming Reservation")
-                                ReservationObject = reservation;  // set global ReservationObject
-                            });
+                        worker.on('reservation.created', function (reservation) {
+                            logger("-----");
+                            logger("You have been reserved to handle a call!");
+                            logger("Call from: " + reservation.task.attributes.from);
+                            logger("Selected language: " + reservation.task.attributes.selected_language);
+                            logger("Customer request: " + reservation.task.attributes.selected_product);
+                            logger("-----");
+                            logger(reservation.sid);
+                            refreshWorkerUI(worker, "Incoming Reservation")
+                            ReservationObject = reservation;  // set global ReservationObject
+                        });
 
-                            worker.on('reservation.accepted', function (reservation) {
-                                logger("Reservation " + reservation.sid + " accepted!");
-                                ReservationObject = reservation; // update reservationObject to contain the updated reservation information/task attributes e.g. conference
-                               
-                            });
-
-                            worker.on('reservation.rejected', function (reservation) {
-                                logger("Reservation " + reservation.sid + " rejected!");
-                            });
-
-                            worker.on('reservation.timeout', function (reservation) {
-                                logger("Reservation " + reservation.sid + " timed out!");
-                            });
-
-                            worker.on('reservation.canceled', function (reservation) {
-                                logger("Reservation " + reservation.sid + " canceled!");
-                            });
+                        worker.on('reservation.accepted', function (reservation) {
+                            logger("Reservation " + reservation.sid + " accepted!");
+                            ReservationObject = reservation; // update reservationObject to contain the updated reservation information/task attributes e.g. conference
 
                         });
 
+                        worker.on('reservation.rejected', function (reservation) {
+                            logger("Reservation " + reservation.sid + " rejected!");
+                        });
 
-                    $.post("/activities").then(function (data) {
+                        worker.on('reservation.timeout', function (reservation) {
+                            logger("Reservation " + reservation.sid + " timed out!");
+                        });
 
-                        var name;
-                        var sid;
+                        worker.on('reservation.canceled', function (reservation) {
+                            logger("Reservation " + reservation.sid + " canceled!");
+                        });
 
-
-                        for (var i = 0; i < data.length; i++) {
-
-                            if (data[i] !== 'undefined') {
-                                var obj = data[i];
-
-                                for (var key in obj) {
-
-                                    if (key == 'friendlyName') {
-                                        name = obj[key];
-
-                                    } else if (key == 'sid') {
-                                        sid = obj[key];
-                                    }
-                                    activity_list[name] = sid;
+                    });
 
 
+                $.post("/activities").then(function (data) {
+
+                    var name;
+                    var sid;
+
+
+                    for (var i = 0; i < data.length; i++) {
+
+                        if (data[i] !== 'undefined') {
+                            var obj = data[i];
+
+                            for (var key in obj) {
+
+                                if (key == 'friendlyName') {
+                                    name = obj[key];
+
+                                } else if (key == 'sid') {
+                                    sid = obj[key];
                                 }
+                                activity_list[name] = sid;
+
 
                             }
+
                         }
-
-                    })
-
-                    device.on('ready', function (device) {
-                        logger('Twilio.Device Ready!');
-                    });
-
-                    device.on('error', function (error) {
-                        $("#logger").text("Error: " + error.message);
-                    });
-
-                    device.on('connect', function (conn) {
-                        $("#logger").text("Successfully established call");
-                    });
-
-                    device.on('disconnect', function (conn) {
-                        $("#logger").text("Call ended");
-                    });
-
-                    device.on('incoming', function (conn) {
-                        $("#logger").text("Incoming connection from " + conn.parameters.From);
-                        // accept the incoming connection and start two-way audio
-                     conn.accept();
-                    });
-
-
-                    function call() {
-                        // get the phone number or client to connect the call to
-                        params = { "PhoneNumber": $("#number").val() };
-                        device.connect(params);
                     }
 
+                })
 
-
+                device.on('ready', function (device) {
+                    logger('Twilio.Device Ready!');
                 });
-        //})
 
+                device.on('error', function (error) {
+                    $("#logger").text("Error: " + error.message);
+                });
+
+                device.on('connect', function (conn) {
+                    $("#logger").text("Successfully established call");
+                });
+
+                device.on('disconnect', function (conn) {
+                    $("#logger").text("Call ended");
+                });
+
+                device.on('incoming', function (conn) {
+                    $("#logger").text("Incoming connection from " + conn.parameters.From);
+                    // accept the incoming connection and start two-way audio
+                    conn.accept();
+                });
+
+
+                function call() {
+                    // get the phone number or client to connect the call to
+                    params = { "PhoneNumber": $("#number").val() };
+                    device.connect(params);
+                }
+
+              
+
+            });
+        //})
+        function sendDigit(digit)
+      {
+          if (device.status() == "busy"){
+            device.activeConnection().sendDigits(digit);
+ 
+          }
+         document.getElementById('number').value =document.getElementById('number').value + digit
+        
+        }
 
         function hangup() {
 
@@ -271,7 +279,7 @@
                     buttons['mute'] = true;
                     buttons['unmute'] = true;
                     buttons['hangup'] = true;
-                   
+
                     break;
                 case "WrapUp":
                     buttons['offline'] = true;
@@ -295,7 +303,8 @@
         }
 
         function acceptReservation() {
-          
+
+
             if (ReservationObject.task.attributes.selected_product === "manager") {
                 // Manager escalation, issue call instuction
                 console.log("manager task");
@@ -326,35 +335,62 @@
             }
             else {
 
-                // not a transfer, simply create a new conference and join customer and worker into it
-                var options = {
-                    "From": caller_id,  // CC's phone number
-                    "PostWorkActivitySid": activity_list["WrapUp"],
-                    "Timeout": "30",
-                };
-                console.log("Starting conference...");
-                console.log(options);
+                if (ReservationObject.task.attributes.selected_product === "outbound") {
 
-                ReservationObject.conference(null, null, null, null,
-                    function (error, reservation) {
-                        if (error) {
-                            console.log(error.code);
-                            console.log(error.message);
+                    ReservationObject.call(
+                        caller_id,  // CC's phone number
+                        ngrok_url+ "/createOutboundConference?conference=" + ReservationObject.taskSid+"&customer="+ ReservationObject.task.attributes.customer,
+                        null,
+                        "true",
+                        null,
+                        null,
+                        null,
+                        // callUrl - URI that is executed on the answering Worker's leg
+                        function (error, reservation) {
+                            if (error) {
+                                console.log(error.code);
+                                console.log(error.message);
+                                return;
+                            }
+                            logger("initiating outbound call");
                         }
-                    },
-                    options
-                )
-                logger("Conference initiated!");
+                    );
+
+                } else {
+
+                    // not a transfer, simply create a new conference and join customer and worker into it
+                    var options = {
+                        "From": caller_id,  // CC's phone number
+                        "PostWorkActivitySid": activity_list["WrapUp"],
+                        "Timeout": "30",
+                    };
+                    console.log("Starting conference...");
+                    console.log(options);
+
+                    ReservationObject.conference(null, null, null, null,
+                        function (error, reservation) {
+                            if (error) {
+                                console.log(error.code);
+                                console.log(error.message);
+                            }
+                        },
+                        options
+                    )
+                    logger("Conference initiated!");
+                }
+
+                refreshWorkerUI(worker, "In a Call");
+
             }
 
-            refreshWorkerUI(worker, "In a Call");
+
         }
 
         function rejectReservation() {
             ReservationObject.reject();
         }
 
-        function transferCallBlind_Manager() {
+        function transferCall() {
             //Initiate a blind transfer to a Manager
             //Make a post request to /callTransfer with the from, to, agent and tasksid
             // callTransfer endpoint will put customer on hold and create a new task/route call to manage
@@ -407,22 +443,34 @@
             }
         }
 
-       
 
+        function createOutboundCall() {
+
+            $.post('/createOutboundTask', {
+                customer: document.getElementById('number').value,
+                worker: Worker_sid,
+            })
+            console.log('clicked outbound call');
+            refreshWorkerUI(worker, "In a Call");
+
+        }
         function logger(message) {
             var log = document.getElementById('log');
             log.value += "\n> " + message;
             log.scrollTop = log.scrollHeight;
         }
 
+        
 
-
+      
+      
 
     </script>
 </head>
 
 <body>
     <div class="content">
+        
         <h2>ACME desktop</h2>
 
         <section id="worker_status">
@@ -431,7 +479,8 @@
             <br />
             <button id="btn_accept" style="display:none;" class="btn" onclick="acceptReservation()">Accept</button>
             <button id="btn_reject" style="display:none;" class="btn" onclick="rejectReservation()">Reject</button>
-            <button id="btn_escalate" style="display:none;" class="btn" onclick="transferCallBlind_Manager()">Escalate</button>
+            <button id="btn_escalate" style="display:none;" class="btn"
+                onclick="transferCall()">Escalate</button>
             <button id="btn_mute" style="display:none;" class="btn" onclick="muteCaller()">Mute</button>
             <button id="btn_unmute" style="display:none;" class="btn" onclick="unmuteCaller()">Unmute</button>
             <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
@@ -444,6 +493,55 @@
         <section>
             <textarea id="log" readonly="true"></textarea>
         </section>
+       
+        <input type="text" id="number" class="n" name="number"
+        placeholder="Enter a phone number or client to call"/>
+    
+        <div class="dialpad">
+        <div class="keys">
+           <div class="key-row">
+             <button class="btn btn-circle btn-default" onclick="sendDigit('1');">1</button>
+             <button class="btn btn-circle btn-default " onclick="sendDigit('2');">2
+               
+             </button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('3');">3
+              
+             </button>
+           </div>
+           <div class="key-row">
+             <button class="btn btn-circle btn-default" onclick="sendDigit('4');">4
+              
+             </button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('5');">5
+              
+             </button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('6');">6
+              
+             </button>
+           </div>
+           <div class="key-row">
+             <button class="btn btn-circle btn-default" onclick="sendDigit('7');">7
+             
+             </button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('8');">8
+              
+             </button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('9');">9
+              
+             </button>
+           </div>
+           <div class="key-row">
+             <button class="btn btn-circle btn-default" onclick="sendDigit('*');">*</button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('0');">0</button>
+             <button class="btn btn-circle btn-default" onclick="sendDigit('#');">#</button>
+           
+            </div>
+              <button class="btn btn-circle btn-default" onclick="sendDigit('+');">+</button>
+   
+         </div>
+         <button id="btn_outbound" class="btn" onclick="createOutboundCall()">Create outboundCall</button>
+           
+        </div>
         <div style="padding-top:0.5em">
             <a href="/agent_list">Back to Agent List</a>
         </div>
