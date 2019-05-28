@@ -17,7 +17,8 @@ This implements:
 - Outbound calling
 - Optional assignment_callback url implementation
 
-It will need a public url, there are two ngrok_url parameters in the following files that you will need to enter your public root domain:
+This training application will need a public url, we recommend using ngrok to provide a tunnel to your local machine: 
+
+const ngrok_url = "https://123454678910.ngrok.io"; //add your ngrok url
 
 server.js line 31
-agent_desktop: line 52
