@@ -48,8 +48,10 @@
         let Connection;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
-        let caller_id = "{{ caller_id }}";
-        let ngrok_url = "https://7832da68.ngrok.io";
+        let caller_id = "{{{ caller_id }}}";
+        
+        let ngrok_url = "{{{ngrok_url}}}";
+        console.log(caller_id);
         var device;
         //  $(function () {
 

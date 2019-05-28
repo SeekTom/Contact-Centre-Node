@@ -144,7 +144,7 @@ app.post("/agent_list", function(req, res) {
 app.get("/agents", function(req, res) {
   res.render("agent_desktop.html", {
     caller_id: caller_id,
-    ngrok_url: ngrok_url.toString("utf8")
+    ngrok_url: ngrok_url
   });
 });
 
