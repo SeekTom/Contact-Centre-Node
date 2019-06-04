@@ -27,7 +27,7 @@ const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone num
 const wrap_up = process.env.TWILIO_ACME_WRAP_UP_ACTIVTY; //add your wrap up activity sid here
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
-const ngrok_url = "https://7832da68.ngrok.io"; //add your ngrok url
+const ngrok_url = "https://5cf6b6ba.ngrok.io"; //add your ngrok url
 const url = require("url");
  
 const TASKROUTER_BASE_URL = "https://taskrouter.twilio.com";
@@ -105,7 +105,7 @@ app.post("/enqueue_call", function(req, res) {
     3: "marketing"
   };
 
-  const enqueue = response.enqueue({ workflowSid: workflow_sid });
+  const enqueue = response.enqueue({ workflowSid: workflow_sid, waitUrl:"https://twimlets.com/holdmusic?Bucket=com.twilio.music.electronica" });
   enqueue.task({}, JSON.stringify({ selected_product: product[Digits] }));
 
   res.type("text/xml");
@@ -114,14 +114,38 @@ app.post("/enqueue_call", function(req, res) {
 });
 
 app.post("/assignment_callback", function(req, res) {
+  
   var dequeue = {
     instruction: "dequeue",
     from: caller_id,
-    post_work_activity_sid: wrap_up
-  };
+    status_callback_url:ngrok_url+"/status_callback"
+    };
   res.type("application/json");
   res.json(dequeue);
 });
+
+app.post("/status_callback", function(req, res){
+
+  console.log(req.url);
+  console.log(req.body);
+  const querystring = url.parse(req.url, true);
+
+
+  client.taskrouter.workspaces(workspaceSid)
+  .tasks(querystring.query.TaskSid)
+  .update({
+    assignmentStatus:"completed",
+    reason:'call ended successfully'
+  })
+  .catch(err =>{
+  console.log(err)
+  })
+  .then(task => console.log(task.assignmentStatus))
+  
+  
+
+})
+
 
 app.get("/agent_list", function(req, res) {
   res.render("agent_list.html");
@@ -146,6 +170,8 @@ app.get("/agents", function(req, res) {
     caller_id: caller_id,
     ngrok_url: ngrok_url
   });
+
+
 });
 
 app.post("/callTransfer", function(req, res) {
