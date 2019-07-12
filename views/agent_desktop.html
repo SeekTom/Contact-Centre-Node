@@ -53,7 +53,7 @@ let caller_id = "{{{ caller_id }}}";
 let ngrok_url = "{{{ngrok_url}}}";
 var device;
 //  $(function () {
-console.log(ngrok_url);
+
 function getParameterByName(name, url) {
   if (!url) url = window.location.href;
   name = name.replace(/[\[\]]/g, "\\$&");
@@ -68,7 +68,7 @@ let Worker_sid = getParameterByName("WorkerSid");
 
 $.post("/client_token", { WorkerSid: Worker_sid }).then(function(data) {
   device = new Twilio.Device(data);
-  console.log(device);
+  
   //  Twilio.Device.setup(data, { debug: true });
 
   let Worker_sid = getParameterByName("WorkerSid");
@@ -76,7 +76,7 @@ $.post("/client_token", { WorkerSid: Worker_sid }).then(function(data) {
 
   $.post("/worker_token", { WorkerSid: getParameterByName("WorkerSid") }).then(
     function(data) {
-      console.log(data);
+      
       worker = new Twilio.TaskRouter.Worker(data);
 
       worker.on("ready", function(worker) {
@@ -130,15 +130,8 @@ $.post("/client_token", { WorkerSid: Worker_sid }).then(function(data) {
       });
 
       worker.on("task.updated", function(task) {
-        //                             for (let [key, value] of Object.entries(task)) {
-        //                              console.log(`${key}: ${value}`);
-        // }                        c
-
-        console.log(task);
         ReservationObject.task = task;
-
-        console.log(ReservationObject);
-      });
+     });
 
       worker.on("reservation.accepted", function(reservation) {
         logger("Reservation " + reservation.sid + " accepted!");
@@ -213,7 +206,7 @@ $.post("/client_token", { WorkerSid: Worker_sid }).then(function(data) {
     device.connect(params);
   }
 });
-//})
+
 function sendDigit(digit) {
   if (device.status() == "busy") {
     device.activeConnection().sendDigits(digit);
@@ -308,7 +301,7 @@ function refreshWorkerUI(worker, activityOverride = null) {
       break;
   }
   Object.keys(buttons).forEach(function(button) {
-    //console.log(button, buttons[button]);
+   
     document.getElementById("btn_" + button).style.display = buttons[button]
       ? "inline"
       : "none";
@@ -344,7 +337,7 @@ function acceptReservation() {
           console.log(error.message);
           return;
         }
-        console.log("reservation called the escalation contact");
+        
       }
     );
 
@@ -414,7 +407,7 @@ function transferCall() {
   //Make a post request to /callTransfer with the from, to, agent and tasksid
 
   if (ReservationObject.task.attributes.selected_product == "outbound") {
-    console.log("outbound call source");
+    
     $.post("/callTransfer", {
       participant:
         ReservationObject.task.attributes.conference.participants.customer, //customer callSid
@@ -476,7 +469,7 @@ function createOutboundCall() {
     customer: document.getElementById("number").value,
     worker: Worker_sid
   });
-  console.log("clicked outbound call");
+  
   refreshWorkerUI(worker, "In a Call");
 }
 function logger(message) {

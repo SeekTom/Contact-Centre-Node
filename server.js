@@ -64,14 +64,10 @@ app.use(
     extended: true
   })
 );
-//app.set('view engine', 'liquid');
-// Register '.html' extension with The Mustache Express
-app.engine("html", mustacheExpress());
-//app.set('view engine', 'mustache');
 
-app.set("views", __dirname + "/views"); // you can change '/views' to '/public',
-// but I recommend moving your templates to a directory
-// with no outside access for security reasons
+app.engine("html", mustacheExpress());
+
+app.set("views", __dirname + "/views"); 
 
 app.get("/", function(req, res) {
   res.render("index.html");
