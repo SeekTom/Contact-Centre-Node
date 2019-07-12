@@ -172,23 +172,24 @@ app.get("/agents", function(req, res) {
 app.post("/callTransfer", function(req, res) {
   const response = new VoiceResponse();
 
-  
   client
     .conferences(req.body.conference)
     .participants(req.body.participant)
     .update({ hold: true })
     .then(muted => console.log(muted.muted))
-    .catch(err=> console.log(err));
+    .catch(err => console.log(err));
 
   client.taskrouter
     .workspaces(workspaceSid)
     .tasks.create({
-      taskChannel:'Voice',
+      taskChannel: "Voice",
       attributes: JSON.stringify({
         selected_product: "manager",
-        conference: {sid:req.body.conference, participants:{customer: req.body.participant}} ,
-        customer_taskSid: req.body.taskSid,
-
+        conference: {
+          sid: req.body.conference,
+          participants: { customer: req.body.participant }
+        },
+        customer_taskSid: req.body.taskSid
       }),
       workflowSid: workflow_sid
     })
@@ -207,14 +208,14 @@ app.post("/transferTwiml", function(req, res) {
 });
 
 app.post("/callMute", function(req, res) {
-   client.conferences(req.body.conference)
-      .participants(req.body.participant)
-      .update({hold: req.body.hold})
-      .catch(err => console.log(err))
-      .then(participant => console.log(participant.callSid));
+  client
+    .conferences(req.body.conference)
+    .participants(req.body.participant)
+    .update({ hold: req.body.hold })
+    .catch(err => console.log(err))
+    .then(participant => console.log(participant.callSid));
 
-      res.sendStatus(200);
-  
+  res.sendStatus(200);
 });
 
 app.post("/createOutboundTask", function(req, res) {
@@ -245,7 +246,8 @@ app.post("/createOutboundTask", function(req, res) {
             worker: req.body.worker,
             taskSid: task.sid
           })
-        }).then(NT =>console.log('task updated to outbound'+NT.attributes));
+        })
+        .then(NT => console.log("task updated to outbound" + NT.attributes));
     })
     .done();
 
@@ -257,14 +259,14 @@ app.post("/createOutboundConference", function(req, res) {
   const customer = querystring.query.customer;
   const response = new VoiceResponse();
   const dial = response.dial();
- 
+
   dial.conference(
     {
       statusCallback:
         ngrok_url +
         "/outboundCallStatusCallback?agent=true&customer=" +
         customer.trim(),
-        statusCallbackEvent: 'join'
+      statusCallbackEvent: "join"
     },
     querystring.query.conference
   );
@@ -275,75 +277,74 @@ app.post("/createOutboundConference", function(req, res) {
 });
 
 app.use("/outboundCallStatusCallback", function(req, res) {
-    
-  
-    const querystring = url.parse(req.url, true);
-    if (req.body.SequenceNumber =='1'){
-      
-      var conferenceSid = req.body.ConferenceSid;
-      var friendlyName = req.body.FriendlyName;
-      
+  const querystring = url.parse(req.url, true);
+  if (req.body.SequenceNumber == "1") {
+    var conferenceSid = req.body.ConferenceSid;
+    var friendlyName = req.body.FriendlyName;
 
-      client.taskrouter
+    client.taskrouter
       .workspaces(workspaceSid)
       .tasks(req.body.FriendlyName)
       .fetch()
       .catch(err => console.log(err))
       .then(task => {
-        
         var originalAttributes = JSON.parse(task.attributes);
-        originalAttributes.conference = {sid:req.body.ConferenceSid, participants:{customer:''}}
-     
+        originalAttributes.conference = {
+          sid: req.body.ConferenceSid,
+          participants: { customer: "" }
+        };
+
         client.taskrouter
           .workspaces(workspaceSid)
           .tasks(req.body.FriendlyName)
           .update({ attributes: JSON.stringify(originalAttributes) })
-          .then(newTask =>{
-           console.log("Conference SID added to task")
-           console.log(newTask.attributes)}
-          )
+          .then(newTask => {
+            console.log("Conference SID added to task");
+            console.log(newTask.attributes);
+          })
           .catch(err => console.log(err));
-      }).then(
+      })
+      .then(
         client
-        .conferences(req.body.ConferenceSid)
-        .participants.create({
-          from: caller_id,
-          to: querystring.query.customer
-        })
-        .catch(err => console.log(err))
-        .then(participant => {
-         
-          console.log(req.body)
-          client.taskrouter
-            .workspaces(workspaceSid)
-            .tasks(friendlyName)
-            .fetch()
-            .then(task => {
-              var originalAttributes = JSON.parse(task.attributes);
-              var originalAttributes = JSON.parse(task.attributes);
-              originalAttributes.conference = {sid:req.body.ConferenceSid, participants:{customer:participant.callSid}}
-           
-             
-              console.log('og att'+ originalAttributes)
-              client.taskrouter
-                .workspaces(workspaceSid)
-                .tasks(friendlyName)
-                .update({ attributes: JSON.stringify(originalAttributes) })
-                .then(newTask =>
-                {  console.log("Added participant call sid to task attributes")
-                  console.log(newTask.attributes)
-                }
-                )
-                .catch(err => console.log(err));
-            });
-        })
-      )
-     
-      
-     }
+          .conferences(req.body.ConferenceSid)
+          .participants.create({
+            from: caller_id,
+            to: querystring.query.customer
+          })
+          .catch(err => console.log(err))
+          .then(participant => {
+            console.log(req.body);
+            client.taskrouter
+              .workspaces(workspaceSid)
+              .tasks(friendlyName)
+              .fetch()
+              .then(task => {
+                var originalAttributes = JSON.parse(task.attributes);
+                var originalAttributes = JSON.parse(task.attributes);
+                originalAttributes.conference = {
+                  sid: req.body.ConferenceSid,
+                  participants: { customer: participant.callSid }
+                };
 
-     res.sendStatus(200);
-    });
+                console.log("og att" + originalAttributes);
+                client.taskrouter
+                  .workspaces(workspaceSid)
+                  .tasks(friendlyName)
+                  .update({ attributes: JSON.stringify(originalAttributes) })
+                  .then(newTask => {
+                    console.log(
+                      "Added participant call sid to task attributes"
+                    );
+                    console.log(newTask.attributes);
+                  })
+                  .catch(err => console.log(err));
+              });
+          })
+      );
+  }
+
+  res.sendStatus(200);
+});
 
 ///DO NOT MODIFY BELOW
 app.post("/activities", function(req, res) {
