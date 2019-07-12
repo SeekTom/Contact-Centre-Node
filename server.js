@@ -27,9 +27,9 @@ const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone num
 const wrap_up = process.env.TWILIO_ACME_WRAP_UP_ACTIVTY; //add your wrap up activity sid here
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
-const ngrok_url = "https://5cf6b6ba.ngrok.io"; //add your ngrok url
+const ngrok_url = "https://3cdb4f51.ngrok.io"; //add your ngrok url
 const url = require("url");
- 
+
 const TASKROUTER_BASE_URL = "https://taskrouter.twilio.com";
 const version = "v1";
 const ClientCapability = require("twilio").jwt.ClientCapability;
@@ -105,7 +105,11 @@ app.post("/enqueue_call", function(req, res) {
     3: "marketing"
   };
 
-  const enqueue = response.enqueue({ workflowSid: workflow_sid, waitUrl:"https://twimlets.com/holdmusic?Bucket=com.twilio.music.electronica" });
+  const enqueue = response.enqueue({
+    workflowSid: workflow_sid,
+    waitUrl:
+      "https://twimlets.com/holdmusic?Bucket=com.twilio.music.electronica"
+  });
   enqueue.task({}, JSON.stringify({ selected_product: product[Digits] }));
 
   res.type("text/xml");
@@ -114,38 +118,31 @@ app.post("/enqueue_call", function(req, res) {
 });
 
 app.post("/assignment_callback", function(req, res) {
-  
   var dequeue = {
     instruction: "dequeue",
     from: caller_id,
-    status_callback_url:ngrok_url+"/status_callback"
-    };
+    status_callback_url: ngrok_url + "/status_callback"
+  };
   res.type("application/json");
   res.json(dequeue);
 });
 
-app.post("/status_callback", function(req, res){
-
-  console.log(req.url);
-  console.log(req.body);
+app.post("/status_callback", function(req, res) {
+  const url = require("url");
   const querystring = url.parse(req.url, true);
 
-
-  client.taskrouter.workspaces(workspaceSid)
-  .tasks(querystring.query.TaskSid)
-  .update({
-    assignmentStatus:"completed",
-    reason:'call ended successfully'
-  })
-  .catch(err =>{
-  console.log(err)
-  })
-  .then(task => console.log(task.assignmentStatus))
-  
-  
-
-})
-
+  client.taskrouter
+    .workspaces(workspaceSid)
+    .tasks(querystring.query.TaskSid)
+    .update({
+      assignmentStatus: "completed",
+      reason: "call ended successfully"
+    })
+    .catch(err => {
+      console.log(err);
+    })
+    .then(task => console.log(task.assignmentStatus));
+});
 
 app.get("/agent_list", function(req, res) {
   res.render("agent_list.html");
@@ -170,21 +167,23 @@ app.get("/agents", function(req, res) {
     caller_id: caller_id,
     ngrok_url: ngrok_url
   });
-
-
 });
 
 app.post("/callTransfer", function(req, res) {
   const response = new VoiceResponse();
 
+  
   client
     .conferences(req.body.conference)
     .participants(req.body.participant)
-    .update({ hold: true });
+    .update({ hold: true })
+    .then(muted => console.log(muted.muted))
+    .catch(err=> console.log(err));
 
   client.taskrouter
     .workspaces(workspaceSid)
     .tasks.create({
+      taskChannel:'Voice',
       attributes: JSON.stringify({
         selected_product: "manager",
         conference: req.body.conference,
@@ -208,14 +207,17 @@ app.post("/transferTwiml", function(req, res) {
 });
 
 app.post("/callMute", function(req, res) {
-  client
-    .conferences(req.body.conference)
-    .participants(req.body.participant)
-    .update({ hold: req.body.muted });
+   client.conferences(req.body.conference)
+      .participants(req.body.participant)
+      .update({hold: req.body.hold})
+      .catch(err => console.log(err))
+      .then(participant => console.log(participant.callSid));
+  
 });
 
 app.post("/createOutboundTask", function(req, res) {
   //create an outbound call task for
+
   client.taskrouter
     .workspaces(workspaceSid)
     .tasks.create({
@@ -229,44 +231,110 @@ app.post("/createOutboundTask", function(req, res) {
         worker: req.body.worker
       })
     })
-    .then(task => console.log(task.sid))
+    .then(task => {
+      client.taskrouter
+        .workspaces(workspaceSid)
+        .tasks(task.sid)
+        .update({
+          attributes: JSON.stringify({
+            selected_product: "outbound",
+            from: caller_id,
+            customer: req.body.customer,
+            worker: req.body.worker,
+            conference: task.sid
+          })
+        });
+    })
     .done();
 
-    res.send(200);
-  });
+  res.send(200);
+});
 
 app.post("/createOutboundConference", function(req, res) {
   const querystring = url.parse(req.url, true);
   const customer = querystring.query.customer;
   const response = new VoiceResponse();
   const dial = response.dial();
-  
-  dial.conference({statusCallback:ngrok_url+'/outboundCallStatusCallback?agent=true&customer='+ customer.trim(), statusCallbackEvent:'join' },querystring.query.conference);
- 
+
+  dial.conference(
+    {
+      statusCallback:
+        ngrok_url +
+        "/outboundCallStatusCallback?agent=true&customer=" +
+        customer.trim(),
+        statusCallbackEvent: 'join'
+    },
+    querystring.query.conference
+  );
+
   res.type("text/xml");
-  
+
   res.send(response.toString());
 });
 
 app.use("/outboundCallStatusCallback", function(req, res) {
-  const querystring = url.parse(req.url, true);
-  console.log(req.body);
-
-  if (req.body.SequenceNumber == '1' ) {
-    console.log('join event');
+    
+  
     const querystring = url.parse(req.url, true);
-      console.log('agent joined');
-        client
-          .conferences(req.body.ConferenceSid)
-          .participants.create({
-            from: caller_id,
-            to: querystring.query.customer,
-            statusCallback: ngrok_url+'/outboundCallStatusCallback='+ querystring.query.customer
-          }).catch(err => console.log(err))
-          .then(participant =>
-            console.log(participant.callSid));
-      }
-  });
+    if (req.body.SequenceNumber =='1'){
+      
+      client.taskrouter
+      .workspaces(workspaceSid)
+      .tasks(req.body.FriendlyName)
+      .fetch()
+      .catch(err => console.log(err))
+      .then(task => {
+        var originalAttributes = JSON.parse(task.attributes);
+        originalAttributes.conferenceSid = req.body.ConferenceSid;
+
+        client.taskrouter
+          .workspaces(workspaceSid)
+          .tasks(req.body.FriendlyName)
+          .update({ attributes: JSON.stringify(originalAttributes) })
+          .then(newTask =>
+           console.log("Conference SID added to task")
+          )
+          .catch(err => console.log(err));
+      });
+
+      console.log("join event");
+      console.log(req.body.SequenceNumber)
+      
+      client
+        .conferences(req.body.ConferenceSid)
+        .participants.create({
+          from: caller_id,
+          to: querystring.query.customer
+          // statusCallback:
+          //   ngrok_url +
+          //   "/outboundCallStatusCallback=" +
+          //   querystring.query.customer
+        })
+        .catch(err => console.log(err))
+        .then(participant => {
+          console.log(participant.callSid);
+          console.log(req.body.ConferenceSid);
+
+          client.taskrouter
+            .workspaces(workspaceSid)
+            .tasks(req.body.FriendlyName)
+            .fetch()
+            .then(task => {
+              var originalAttributes = JSON.parse(task.attributes);
+              originalAttributes.participant = participant.callSid;
+
+              client.taskrouter
+                .workspaces(workspaceSid)
+                .tasks(req.body.FriendlyName)
+                .update({ attributes: JSON.stringify(originalAttributes) })
+                .then(newTask =>
+                  console.log("Added participant call sid to task attributes")
+                )
+                .catch(err => console.log(err));
+            });
+        });
+     }
+});
 
 ///DO NOT MODIFY BELOW
 app.post("/activities", function(req, res) {
