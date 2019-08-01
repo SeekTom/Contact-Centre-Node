@@ -24,7 +24,7 @@ const VoiceResponse = require("twilio").twiml.VoiceResponse;
 const workflow_sid = process.env.TWILIO_ACME_WORKFLOW_SID; //add your workflow sid here
 const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone number here
 
-const wrap_up = process.env.TWILIO_ACME_WRAP_UP_ACTIVTY; //add your wrap up activity sid here
+const wrap_up = "WA7753cfcca60b01b0f4a86a00bb21b6d8"; //add your wrap up activity sid here
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
 const ngrok_url = process.env.TWILIO_ACME_NGROK_URL; //add your ngrok url
@@ -116,8 +116,9 @@ app.post("/enqueue_call", function(req, res) {
 app.post("/assignment_callback", function(req, res) {
   var dequeue = {
     instruction: "dequeue",
-    from: caller_id,
-    status_callback_url: ngrok_url + "/status_callback"
+    status_callback_url:ngrok_url+'status_callback',
+    from: caller_id
+  
   };
   res.type("application/json");
   res.json(dequeue);
@@ -322,7 +323,6 @@ app.use("/outboundCallStatusCallback", function(req, res) {
                   participants: { customer: participant.callSid }
                 };
 
-                console.log("og att" + originalAttributes);
                 client.taskrouter
                   .workspaces(workspaceSid)
                   .tasks(friendlyName)

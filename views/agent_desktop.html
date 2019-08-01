@@ -149,7 +149,7 @@ $.post("/client_token", { WorkerSid: Worker_sid }).then(function(data) {
       worker.on("reservation.canceled", function(reservation) {
         logger("Reservation " + reservation.sid + " canceled!");
         logger("Reason:" + reservation.task.reason);
-        refreshWorkerUI(worker, "Idle");
+        refreshWorkerUI(worker, "Available");
       });
 
       worker.on("reservation.completed", function(reservation) {
@@ -219,7 +219,7 @@ function hangup() {
   ReservationObject.task.complete();
 
   device.disconnectAll();
-  worker.update("ActivitySid", activity_list["WrapUp"], function(
+  worker.update("ActivitySid", activity_list["Unavailable"], function(
     error,
     worker
   ) {
@@ -250,7 +250,7 @@ function goOffline() {
 
 function goAvailable() {
   // update worker's activity to Idle
-  worker.update("ActivitySid", activity_list["Idle"], function(error, worker) {
+  worker.update("ActivitySid", activity_list["Available"], function(error, worker) {
     if (error) {
       console.log(error.code);
       console.log(error.message);
@@ -274,7 +274,7 @@ function refreshWorkerUI(worker, activityOverride = null) {
   };
 
   switch (activityName) {
-    case "Idle":
+    case "Available":
       buttons["offline"] = true;
       break;
     case "Offline":
@@ -293,7 +293,7 @@ function refreshWorkerUI(worker, activityOverride = null) {
       buttons["hangup"] = true;
 
       break;
-    case "WrapUp":
+    case "Unavailable":
       buttons["offline"] = true;
       buttons["escalate"] = false;
       buttons["online"] = true;
@@ -373,7 +373,7 @@ function acceptReservation() {
       // not a transfer, simply create a new conference and join customer and worker into it
       var options = {
         From: caller_id, // CC's phone number
-        PostWorkActivitySid: activity_list["WrapUp"],
+        PostWorkActivitySid: activity_list["Unavailable"],
         Timeout: "30"
       };
       console.log("Starting conference...");
