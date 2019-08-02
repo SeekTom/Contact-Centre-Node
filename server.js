@@ -19,15 +19,16 @@ const app = express();
 const accountSid = process.env.TWILIO_ACME_ACCOUNT_SID; //add your account SID here
 const authToken = process.env.TWILIO_ACME_AUTH_TOKEN; // add your auth token here
 const workspaceSid = process.env.TWILIO_ACME_WORKSPACE_SID; // add your workspace sid here
+
 const client = require("twilio")(accountSid, authToken);
+
 const VoiceResponse = require("twilio").twiml.VoiceResponse;
 const workflow_sid = process.env.TWILIO_ACME_WORKFLOW_SID; //add your workflow sid here
 const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone number here
 
-const wrap_up = "process.env.TWILIO_ACME_WRAP_UP_ACTIVTY"; //add your wrap up activity sid here
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
-const ngrok_url = process.env.TWILIO_ACME_NGROK_URL; //add your ngrok url
+const ngrok_url = ocess.env.TWILIO_ACME_NGROK_URL; //add your ngrok url
 const url = require("url");
 
 const TASKROUTER_BASE_URL = "https://taskrouter.twilio.com";
