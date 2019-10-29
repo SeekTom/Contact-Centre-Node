@@ -28,7 +28,7 @@ const caller_id = process.env.TWILIO_ACME_CALLERID; // add your Twilio phone num
 
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID; //add your TwiML application sid here
 
-const ngrok_url = process.env.TWILIO_ACME_NGROK_URL; //add your ngrok url
+const ngrok_url = ""; //add your ngrok url
 const url = require("url");
 
 const TASKROUTER_BASE_URL = "https://taskrouter.twilio.com";
@@ -68,7 +68,7 @@ app.use(
 
 app.engine("html", mustacheExpress());
 
-app.set("views", __dirname + "/views"); 
+app.set("views", __dirname + "/views");
 
 app.get("/", function(req, res) {
   res.render("index.html");
@@ -86,7 +86,7 @@ app.post("/incoming_call", function(req, res) {
 
   gather.say("please select from the following options");
   gather.say("for sales press one, for support press two");
-  gather.say("for billing press three, for marketing press 4");
+  gather.say("for billin press three, to leave a voicemail press 4");
 
   res.type("text/xml");
   res.send(response.toString());
@@ -99,7 +99,8 @@ app.post("/enqueue_call", function(req, res) {
   var product = {
     1: "sales",
     2: "support",
-    3: "marketing"
+    3: "marketing",
+    4: "voicemail"
   };
 
   const enqueue = response.enqueue({
@@ -107,19 +108,107 @@ app.post("/enqueue_call", function(req, res) {
     waitUrl:
       "https://twimlets.com/holdmusic?Bucket=com.twilio.music.electronica"
   });
-  enqueue.task({}, JSON.stringify({ selected_product: product[Digits] }));
+  enqueue.task(
+    { timeout: 1000 },
+    JSON.stringify({ selected_product: product[Digits] })
+  );
 
   res.type("text/xml");
-
   res.send(response.toString());
+});
+
+app.post("/event_callback_url", (req, res) => {
+  var event = req.body.EventType;
+  var taskqueue = req.body.TaskQueueName;
+
+  switch (event) {
+    case "task-queue.entered":
+     
+      if (taskqueue !== "Voicemail") {
+        //do nothing
+        res.sendStatus(200);
+      } else {
+        const TaskSid = req.body.TaskSid;
+        const TaskAttributes = JSON.parse(req.body.TaskAttributes);
+        client.taskrouter
+          .workspaces(workspaceSid)
+          .tasks(TaskSid)
+          .update({
+            assignmentStatus: "canceled",
+            reason: "sent to voicemail"
+          })
+          .catch(err => console.log(err))
+          .then(task => {
+            client
+              .calls(TaskAttributes["call_sid"])
+              .update({
+                method: "POST",
+                url: encodeURI(ngrok_url + "/redirect?TaskSid=" + TaskSid)
+              })
+              .catch(err => console.log("call error:" + err))
+              .then(call => {
+                console.log("Call redirected to Voicemail");
+              });
+          });
+      }
+      break;
+    default:
+      res.sendStatus(200);
+      break;
+  }
+});
+
+app.post("/redirect", function(req, res) {
+  const url = require("url");
+  const querystring = url.parse(req.url, true);
+
+  var response = new VoiceResponse();
+
+  response.say(
+    "I'm sorry there are no available agents, please leave a voicemail and a member of the team will get back to you."
+  );
+  response.record({
+    transcribeCallback: encodeURI(
+      ngrok_url + "/transcribeTask?TaskSid=" + querystring.query.TaskSid
+    ),
+    maxLength: 30
+  });
+
+  res.type("text/xml");
+  res.send(response.toString());
+});
+
+app.post("/transcribeTask", (req, res) => {
+  const url = require("url");
+
+  const querystring = url.parse(req.url, true);
+  const recordedMessage = req.body.TranscriptionText;
+  const customer_number = req.body.from;
+  const number_called = req.body.to;
+
+  const taskAttributes = {
+    selected_product: "callback",
+    voicemail_transcripton: recordedMessage,
+    from: customer_number,
+    to: number_called
+  };
+
+  client.taskrouter
+    .workspaces(workspaceSid)
+    .tasks.create({
+      taskChannel: "default",
+      workflowSid: workflow_sid,
+      attributes: JSON.stringify(taskAttributes)
+    })
+    .catch(err => console.log(err))
+    .then(task => console.log("voicemail callback task created"));
 });
 
 app.post("/assignment_callback", function(req, res) {
   var dequeue = {
     instruction: "dequeue",
-    status_callback_url:ngrok_url+'status_callback',
+    status_callback_url: ngrok_url + "/status_callback",
     from: caller_id
-  
   };
   res.type("application/json");
   res.json(dequeue);
@@ -317,7 +406,6 @@ app.use("/outboundCallStatusCallback", function(req, res) {
               .tasks(friendlyName)
               .fetch()
               .then(task => {
-                var originalAttributes = JSON.parse(task.attributes);
                 var originalAttributes = JSON.parse(task.attributes);
                 originalAttributes.conference = {
                   sid: req.body.ConferenceSid,
